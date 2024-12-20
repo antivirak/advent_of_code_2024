@@ -69,7 +69,7 @@ def main1() -> int:
     return min(win)
 
 
-def backtrack(node, direction, nodes):
+def backtrack(node: tuple[int, int], direction: tuple[int, int], nodes: set[tuple[int, int]]):
     """
     Find all nodes making up any shortest path.
     This is achieved by following the shortest path and adding all nodes,
