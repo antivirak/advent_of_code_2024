@@ -132,17 +132,21 @@ def main2() -> int:
     graph = Graph(grid)
     graph.dp(start, 0)
     # if the cheat saves at least 100 picoseconds,
-    # it needs to connect 2 points on path whose diff in cost is >= 100
+    # it needs to connect 2 points on path whose diff in cost (minus shortcut len) is >= 100
     res = 0
-    for node, orig_cost in graph.visited.items():
-        if orig_cost == float('inf'):
-            continue
-        for other, cost in graph.visited.items():
+    to_iter = list(filter(lambda x: x[1] != float('inf'), graph.visited.items()))
+    path_len = len(to_iter)
+    for node, orig_cost in to_iter:
+        idx = 0
+        while idx < path_len:
+            other, cost = to_iter[idx]
             md = abs(node[0] - other[0]) + abs(node[1] - other[1])  # distance on grid
-            if cost == float('inf') or md > 20:
+            if md > 20:
+                idx += md - 20  # skip ahead - optimization
                 continue
-            if orig_cost - cost - md >= 100:
+            if orig_cost - cost - md >= 100:  # 50
                 res += 1
+            idx += 1
 
     # from collections import defaultdict
     # res_d = defaultdict(int)
