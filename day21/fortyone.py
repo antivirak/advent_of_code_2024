@@ -3,15 +3,16 @@
 5074 / 19786
 """
 
+from functools import lru_cache
 from math import copysign
 from typing import Optional
 
 import numpy as np
 
-KEYPAD = (
-    ('#', '^', 'A'),
-    ('<', 'v', '>'),
-)
+# KEYPAD = (
+#     ('#', '^', 'A'),
+#     ('<', 'v', '>'),
+# )
 
 DIRECTIONS_0 = {
     '#': (3, 0),
@@ -86,58 +87,60 @@ def simple(
     return visited
 
 
-def diff(inp: list[tuple[int, int]]) -> tuple[tuple[int, ...], ...]:
+def diff(inp: list[tuple[int, int]]) -> tuple[tuple[int, int], ...]:
     return tuple(map(tuple, np.diff(inp, axis=0)))
 
 
-def solve(
-    start: tuple[int, int],
-    code: tuple[str, ...],  # tuple[str, str, str, str]
-    layers: int,
-    to_visit_: Optional[list[tuple[tuple[int, ...], ...]]] = None,
-) -> list[tuple[tuple[int, ...], ...]]:
-    """solve"""
-    if to_visit_ is None:
-        to_visit: list[tuple[tuple[int, ...], ...]] = []
-        for key in code:
-            end = DIRECTIONS_0[key]
-            visited = simple(start, end)
-            if (3, 0) in visited:
-                visited = simple(start, end, reverse_=True)
-            start = visited[-1]
-            to_visit.append(diff(visited))
-    else:
-        to_visit = to_visit_
+@lru_cache
+def get_sequence_length(
+    layer: int,
+    to_visit: tuple[tuple[tuple[int, int], ...], ...],
+) -> int:
+    """Solve() with memoization"""
+    if not layer:
+        return len(to_visit)
+    to_press = []
+    start = (0, 2)
+    for visited_ in to_visit:
+        for key_ in [*visited_, (0, 0)]:  # Add A
+            end = DIRECTIONS_1[DIRECTIONS_REV[key_]]
+            pressed = simple(start, end)
+            if (0, 0) in pressed:
+                pressed = simple(start, end, reverse_=True)
+            to_press.append(diff(pressed))
+            start = end
 
-    for _ in range(layers):
-        # TODO we construct the enormous list to measure its len, which will likely have billion elements
-        to_press = []
-        start = (0, 2)
-        for visited_ in to_visit:
-            for key_ in [*visited_, (0, 0)]:  # Add A
-                end = DIRECTIONS_1[DIRECTIONS_REV[key_]]
-                pressed = simple(start, end)
-                if (0, 0) in pressed:
-                    pressed = simple(start, end, reverse_=True)
-                to_press.append(tuple(diff(pressed)))
-                start = end
+    len_to_visit = 0
+    for item in to_press:
+        len_to_visit += get_sequence_length(layer - 1, (item, ))
 
-        to_visit = to_press
+    return len_to_visit
 
-    return to_visit
+
+def solve_next_pad(start: tuple[int, int], code: tuple[str, ...], layers: int) -> int:
+    to_visit: list[tuple[tuple[int, int], ...]] = []
+    for key in code:
+        end = DIRECTIONS_0[key]
+        visited = simple(start, end)
+        if (3, 0) in visited:
+            visited = simple(start, end, reverse_=True)
+        start = visited[-1]
+        to_visit.append(diff(visited))
+
+    return get_sequence_length(layers, tuple(to_visit))
 
 
 def solve_part(layers: int) -> int:
-    """solve part"""
-    with open('input.txt', 'r') as f:
+    with open("input.txt", 'r') as f:
         codes = tuple(map(lambda x: tuple(x.rstrip()), f.readlines()))
     vals = [int(''.join(code[:-1])) for code in codes]
 
     res = 0
     start = (3, 2)
     for code, val in zip(codes, vals):
-        sol = solve(start, code, layers)
-        res += val * len(sol)
+        mult = solve_next_pad(start, code, layers)
+
+        res += val * mult
 
     return res
 
@@ -147,5 +150,11 @@ def main1() -> int:
     return solve_part(3)
 
 
+def main2() -> int:
+    """part2"""
+    return solve_part(26)
+
+
 if __name__ == '__main__':
     print(main1())
+    print(main2())
