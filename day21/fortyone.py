@@ -1,9 +1,9 @@
-"""
-https://adventofcode.com/2024/day/21
+"""https://adventofcode.com/2024/day/21
+
+5074 / 19786
 """
 
-from random import getrandbits
-from sys import maxsize
+from math import copysign
 from typing import Optional
 
 import numpy as np
@@ -49,49 +49,41 @@ def simple(
     start: tuple[int, int],
     end: tuple[int, int],
     reverse_: Optional[bool] = None,
-) -> tuple[list[tuple[int, int]], bool]:
+) -> list[tuple[int, int]]:
     # simple path finding by going straight to the end
-    # randomly choosing, if we should go up-down or left-right first
+    # correctly deciding, if we should go up-down or left-right first
     visited = [start]
     vector = (end[0] - start[0], end[1] - start[1])
-    if reverse_ is None:
-        reverse = bool(getrandbits(1))
-    else:
-        reverse = reverse_
+    vector_sgn = (copysign(1, vector[0]), copysign(1, vector[1]))
     i = 0
-    if reverse:
+    condition = vector_sgn[1] == -1  # if going left, go left first
+    if reverse_:
+        condition = not condition
+    if condition:
         if vector[1] < 0:
-            for i in range(1, -vector[1] + 1):
-                visited.append((start[0], start[1] - i))
-                i = -i
+            visited.extend([(start[0], start[1] - i) for i in range(1, -vector[1] + 1)])
         else:
-            for i in range(1, vector[1] + 1):
-                visited.append((start[0], start[1] + i))
+            visited.extend([(start[0], start[1] + i) for i in range(1, vector[1] + 1)])
+        i = vector[1]
 
         if vector[0] < 0:
-            for j in range(1, -vector[0] + 1):
-                visited.append((start[0] - j, start[1] + i))
+            visited.extend([(start[0] - j, start[1] + i) for j in range(1, -vector[0] + 1)])
         else:
-            for j in range(1, vector[0] + 1):
-                visited.append((start[0] + j, start[1] + i))
-        return visited, reverse
+            visited.extend([(start[0] + j, start[1] + i) for j in range(1, vector[0] + 1)])
+        return visited
 
     if vector[0] < 0:
-        for i in range(1, -vector[0] + 1):
-            visited.append((start[0] - i, start[1]))
-            i = -i
+        visited.extend([(start[0] - i, start[1]) for i in range(1, -vector[0] + 1)])
     else:
-        for i in range(1, vector[0] + 1):
-            visited.append((start[0] + i, start[1]))
+        visited.extend([(start[0] + i, start[1]) for i in range(1, vector[0] + 1)])
+    i = vector[0]
 
     if vector[1] < 0:
-        for j in range(1, -vector[1] + 1):
-            visited.append((start[0] + i, start[1] - j))
+        visited.extend([(start[0] + i, start[1] - j) for j in range(1, -vector[1] + 1)])
     else:
-        for j in range(1, vector[1] + 1):
-            visited.append((start[0] + i, start[1] + j))
+        visited.extend([(start[0] + i, start[1] + j) for j in range(1, vector[1] + 1)])
 
-    return visited, reverse
+    return visited
 
 
 def diff(inp: list[tuple[int, int]]) -> tuple[tuple[int, ...], ...]:
@@ -109,9 +101,9 @@ def solve(
         to_visit: list[tuple[tuple[int, ...], ...]] = []
         for key in code:
             end = DIRECTIONS_0[key]
-            visited, reverse = simple(start, end)
+            visited = simple(start, end)
             if (3, 0) in visited:
-                visited, _ = simple(start, end, reverse_=not reverse)
+                visited = simple(start, end, reverse_=True)
             start = visited[-1]
             to_visit.append(diff(visited))
     else:
@@ -121,23 +113,12 @@ def solve(
         # TODO we construct the enormous list to measure its len, which will likely have billion elements
         to_press = []
         start = (0, 2)
-        cache: dict[tuple[tuple[int, int], tuple[int, int]], list[tuple[int, int]]] = {}  # My caching try - not working well so far
         for visited_ in to_visit:
             for key_ in [*visited_, (0, 0)]:  # Add A
                 end = DIRECTIONS_1[DIRECTIONS_REV[key_]]
-                if pressed := cache.get((start, end)):  # first walrus this year :) Probably because I solved half problems in another lang
-                    to_press.append(tuple(diff(pressed)))
-                    start = end
-                    continue
-                pressed1, reverse = simple(start, end)
-                pressed2, _ = simple(start, end, reverse_=not reverse)
-                if (0, 0) in pressed1:
-                    pressed = pressed2
-                elif (0, 0) in pressed2:
-                    pressed = pressed1
-                else:
-                    pressed = min(pressed1, pressed2, key=len)
-                cache[(start, end)] = pressed
+                pressed = simple(start, end)
+                if (0, 0) in pressed:
+                    pressed = simple(start, end, reverse_=True)
                 to_press.append(tuple(diff(pressed)))
                 start = end
 
@@ -155,13 +136,8 @@ def solve_part(layers: int) -> int:
     res = 0
     start = (3, 2)
     for code, val in zip(codes, vals):
-        # just repeat the random choosing of first direction
-        # until we get minumum
-        mult = maxsize
-        for _ in range(10):  # 1000
-            sol = solve(start, code, layers)
-            mult = min(mult, len(sol))
-        res += val * mult
+        sol = solve(start, code, layers)
+        res += val * len(sol)
 
     return res
 
@@ -172,4 +148,4 @@ def main1() -> int:
 
 
 if __name__ == '__main__':
-    print(main1())  # 94284
+    print(main1())
