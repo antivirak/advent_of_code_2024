@@ -97,9 +97,9 @@ def main2() -> str:
         else:
             raise ValueError(f'Unknown operation: {op}')
 
-    intermed = graph['z18']
-    graph['z18'] = graph['qgd']
-    graph['qgd'] = intermed
+    # intermed = graph['z18']
+    # graph['z18'] = graph['qgd']
+    # graph['qgd'] = intermed
 
     for key, val in graph.items():
         print(f"{val[0]} -> {key};")

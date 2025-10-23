@@ -7,6 +7,11 @@ import sys
 from typing import Optional
 
 sys.setrecursionlimit(100_000)
+MAX_U32 = 4294967295
+# 4294967295 is max u32 (but python would reallocate instead of overflow)
+# anyway, we could use float('inf') to make sure it is allway bigger,
+# but we are dealing with ints the whole program; no need for float
+# could also use sys.maxsize
 
 
 def neighbors(x: int, y: int) -> list[tuple[int, int]]:
@@ -101,7 +106,7 @@ class Graph:
         # could modify the more performant iterative algo
         i, j = coords
         if self.input_map[i][j] == '#':
-            self.visited[coords] = float('inf')
+            self.visited[coords] = MAX_U32
             return
 
         self.visited[coords] = weight
@@ -134,7 +139,7 @@ def main2() -> int:
     # if the cheat saves at least 100 picoseconds,
     # it needs to connect 2 points on path whose diff in cost (minus shortcut len) is >= 100
     res = 0
-    to_iter = list(filter(lambda x: x[1] != float('inf'), graph.visited.items()))
+    to_iter = list(filter(lambda x: x[1] != MAX_U32, graph.visited.items()))
     path_len = len(to_iter)
     for node, orig_cost in to_iter:
         idx = 0
@@ -148,23 +153,10 @@ def main2() -> int:
                 res += 1
             idx += 1
 
-    # from collections import defaultdict
-    # res_d = defaultdict(int)
-    # for node, orig_cost in graph.visited.items():
-    #     if orig_cost == float('inf'):
-    #         continue
-    #     for other, cost in graph.visited.items():
-    #         md = abs(node[0] - other[0]) + abs(node[1] - other[1])
-    #         if cost == float('inf') or md > 20:
-    #             continue
-    #         cost = orig_cost - cost - md
-    #         if cost >= 50:
-    #             res_d[cost] += 1
-    # for key in sorted(res_d.keys()):
-    #     print(f'{key}: {res_d[key]}')
+    
     return res
 
 
 if __name__ == '__main__':
-    print(main1())  # 1286
-    print(main2())  # 989316
+    print(main1())
+    print(main2())

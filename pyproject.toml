@@ -1,0 +1,4 @@
+[tool.ruff]
+extend-exclude = ["__init__.py"]
+extend-select = ["ALL"]
+ignore = ["ANN201", "ANN401", "PTH", "T20", "E501", "D1", "Q000", "UP015", "D415", "D400", "C417", "FIX002", "TD002", "TD003", "PLW2901", "FA100", "C901", "PLR0912"]
